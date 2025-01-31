@@ -106,8 +106,8 @@ def delete_task_v2(task_id: int, api_key: str = Depends(authenticate_api_key)):
     return JSONResponse(status_code=204, content={"message": "Thy task hath been deleted with triumph."})
 
 # Include routers for version 1 and version 2
-app.include_router(api_v1_router, prefix="/apiv1", tags=["v1"])
-app.include_router(api_v2_router, prefix="/apiv2", tags=["v2"])
+app.include_router(api_v1_router, prefix="/version1", tags=["v1"])
+app.include_router(api_v2_router, prefix="/version2", tags=["v2"])
 
 @app.get("/", tags=["root"])
 def home():
