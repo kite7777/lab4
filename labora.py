@@ -9,121 +9,121 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Initialize FastAPI app
-app = FastAPI()
+api_app = FastAPI()
 
 # Retrieve the API Key from environment
-API_KEY = os.getenv("LAB_KEY")
+SECRET_API_KEY = os.getenv("LAB_KEY")
 
 # Task Model for Input Validation
-class Task(BaseModel):
-    task_title: str
-    task_desc: Optional[str] = ""
-    is_finished: bool = False
+class TaskDetails(BaseModel):
+    title: str
+    description: Optional[str] = ""
+    completed: bool = False
 
 # Utility function to verify API key
-def verify_api_key(request: Request):
-    api_key = request.headers.get("X-API-KEY") or request.query_params.get("api_key")
-    if api_key != API_KEY:
-        raise HTTPException(status_code=401, detail="Invalid API Key")
+def validate_api_key(req: Request):
+    api_key = req.headers.get("X-API-KEY") or req.query_params.get("api_key")
+    if api_key != SECRET_API_KEY:
+        raise HTTPException(status_code=401, detail="Access Denied: Incorrect API Key")
     return api_key
 
-# Generic task database (using dictionary for versioned data)
-class TaskDatabase:
+# Task Data Storage Class
+class TaskStorage:
     def __init__(self):
-        self.db = []
+        self.data = []
 
-    def get_task_by_id(self, task_id: int):
-        return next((task for task in self.db if task["task_id"] == task_id), None)
+    def find_task_by_id(self, task_id: int):
+        return next((task for task in self.data if task["id"] == task_id), None)
 
-    def add_task(self, task: Task):
-        task_id = len(self.db) + 1
+    def add_new_task(self, task: TaskDetails):
+        task_id = len(self.data) + 1
         new_task = task.dict()
-        new_task["task_id"] = task_id
-        self.db.append(new_task)
+        new_task["id"] = task_id
+        self.data.append(new_task)
         return new_task
 
-    def update_task(self, task_id: int, task_data: Task):
-        task_entry = self.get_task_by_id(task_id)
+    def modify_task(self, task_id: int, task_data: TaskDetails):
+        task_entry = self.find_task_by_id(task_id)
         if task_entry:
             task_entry.update(task_data.dict())
             return task_entry
         return None
 
-    def delete_task(self, task_id: int):
-        task = self.get_task_by_id(task_id)
+    def remove_task(self, task_id: int):
+        task = self.find_task_by_id(task_id)
         if task:
-            self.db.remove(task)
+            self.data.remove(task)
             return True
         return False
 
-# Initialize two separate task databases for v1 and v2
-task_db_v1 = TaskDatabase()
-task_db_v2 = TaskDatabase()
+# Initialize different task storage for versions
+v1_task_storage = TaskStorage()
+v2_task_storage = TaskStorage()
 
-# APIV1 Router
-apiv1 = APIRouter()
+# API Router for Version 1
+v1_router = APIRouter()
 
-@apiv1.get("/task/{task_id}", tags=["v1"])
-def get_task_v1(task_id: int, api_key: str = Depends(verify_api_key)):
-    task = task_db_v1.get_task_by_id(task_id)
+@v1_router.get("/taks/{task_id}", tags=["v1"])
+def retrieve_task_v1(task_id: int, api_key: str = Depends(validate_api_key)):
+    task = v1_task_storage.find_task_by_id(task_id)
     if not task:
-        raise HTTPException(status_code=404, detail=f"Task ID {task_id} not found.")
+        raise HTTPException(status_code=404, detail=f"Task with ID {task_id} not found in Version 1.")
     return task
 
-@apiv1.post("/task", tags=["v1"])
-def create_task_v1(task: Task, api_key: str = Depends(verify_api_key)):
-    new_task = task_db_v1.add_task(task)
-    return JSONResponse(status_code=201, content={"message": "Task successfully created.", "task": new_task})
+@v1_router.post("/taks", tags=["v1"])
+def add_task_v1(task: TaskDetails, api_key: str = Depends(validate_api_key)):
+    new_task = v1_task_storage.add_new_task(task)
+    return JSONResponse(status_code=201, content={"message": "Task added successfully to Version 1.", "task": new_task})
 
-@apiv1.patch("/task/{task_id}", tags=["v1"])
-def update_task_v1(task_id: int, task: Task, api_key: str = Depends(verify_api_key)):
-    updated_task = task_db_v1.update_task(task_id, task)
+@v1_router.patch("/taks/{task_id}", tags=["v1"])
+def edit_task_v1(task_id: int, task: TaskDetails, api_key: str = Depends(validate_api_key)):
+    updated_task = v1_task_storage.modify_task(task_id, task)
     if not updated_task:
-        raise HTTPException(status_code=404, detail=f"Task ID {task_id} not found.")
-    return JSONResponse(status_code=204, content={"message": "Task successfully updated."})
+        raise HTTPException(status_code=404, detail=f"Task with ID {task_id} not found in Version 1.")
+    return JSONResponse(status_code=204, content={"message": "Task updated in Version 1."})
 
-@apiv1.delete("/task/{task_id}", tags=["v1"])
-def delete_task_v1(task_id: int, api_key: str = Depends(verify_api_key)):
-    if not task_db_v1.delete_task(task_id):
-        raise HTTPException(status_code=404, detail=f"Task ID {task_id} not found.")
-    return JSONResponse(status_code=204, content={"message": "Task successfully deleted."})
+@v1_router.delete("/taks/{task_id}", tags=["v1"])
+def delete_task_v1(task_id: int, api_key: str = Depends(validate_api_key)):
+    if not v1_task_storage.remove_task(task_id):
+        raise HTTPException(status_code=404, detail=f"Task with ID {task_id} does not exist in Version 1.")
+    return JSONResponse(status_code=204, content={"message": "Task removed from Version 1."})
 
-# APIV2 Router
-apiv2 = APIRouter()
+# API Router for Version 2
+v2_router = APIRouter()
 
-@apiv2.get("/task/{task_id}", tags=["v2"])
-def get_task_v2(task_id: int, api_key: str = Depends(verify_api_key)):
-    task = task_db_v2.get_task_by_id(task_id)
+@v2_router.get("/taks/{task_id}", tags=["v2"])
+def retrieve_task_v2(task_id: int, api_key: str = Depends(validate_api_key)):
+    task = v2_task_storage.find_task_by_id(task_id)
     if not task:
-        raise HTTPException(status_code=404, detail=f"Task ID {task_id} not found.")
+        raise HTTPException(status_code=404, detail=f"Task with ID {task_id} not found in Version 2.")
     return task
 
-@apiv2.post("/task", tags=["v2"])
-def create_task_v2(task: Task, api_key: str = Depends(verify_api_key)):
-    new_task = task_db_v2.add_task(task)
-    return JSONResponse(status_code=201, content={"message": "Task successfully created.", "task": new_task})
+@v2_router.post("/taks", tags=["v2"])
+def add_task_v2(task: TaskDetails, api_key: str = Depends(validate_api_key)):
+    new_task = v2_task_storage.add_new_task(task)
+    return JSONResponse(status_code=201, content={"message": "Task successfully created in Version 2.", "task": new_task})
 
-@apiv2.patch("/task/{task_id}", tags=["v2"])
-def update_task_v2(task_id: int, task: Task, api_key: str = Depends(verify_api_key)):
-    updated_task = task_db_v2.update_task(task_id, task)
+@v2_router.patch("/taks/{task_id}", tags=["v2"])
+def edit_task_v2(task_id: int, task: TaskDetails, api_key: str = Depends(validate_api_key)):
+    updated_task = v2_task_storage.modify_task(task_id, task)
     if not updated_task:
-        raise HTTPException(status_code=404, detail=f"Task ID {task_id} not found.")
-    return JSONResponse(status_code=204, content={"message": "Task successfully updated."})
+        raise HTTPException(status_code=404, detail=f"Task with ID {task_id} not found in Version 2.")
+    return JSONResponse(status_code=204, content={"message": "Task updated in Version 2."})
 
-@apiv2.delete("/task/{task_id}", tags=["v2"])
-def delete_task_v2(task_id: int, api_key: str = Depends(verify_api_key)):
-    if not task_db_v2.delete_task(task_id):
-        raise HTTPException(status_code=404, detail=f"Task ID {task_id} not found.")
-    return JSONResponse(status_code=204, content={"message": "Task successfully deleted."})
+@v2_router.delete("/taks/{task_id}", tags=["v2"])
+def delete_task_v2(task_id: int, api_key: str = Depends(validate_api_key)):
+    if not v2_task_storage.remove_task(task_id):
+        raise HTTPException(status_code=404, detail=f"Task with ID {task_id} not found in Version 2.")
+    return JSONResponse(status_code=204, content={"message": "Task successfully deleted from Version 2."})
 
-# Add routers to the main app
-app.include_router(apiv1, prefix="/apiv1", tags=["v1"])
-app.include_router(apiv2, prefix="/apiv2", tags=["v2"])
+# Register routers with the main app
+api_app.include_router(v1_router, prefix="/v1api", tags=["v1"])
+api_app.include_router(v2_router, prefix="/v2api", tags=["v2"])
 
-@app.get("/", tags=["root"])
-def read_root():
-    return {"message": "Welcome to the API. Access versioned endpoints with /apiv1/task/1 or /apiv2/task/1."}
+@api_app.get("/", tags=["root"])
+def root_message():
+    return {"message": "Greetings! Access versioned API endpoints with /v1api/taks/{id} or /v2api/taks/{id}."}
 
-@app.get("/health")
-def health_check():
-    return {"status": "API is GOOD"}
+@api_app.get("/health")
+def api_health_check():
+    return {"status": "Everything is up and running."}
