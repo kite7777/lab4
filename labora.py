@@ -28,11 +28,12 @@ def find_task(task_list, task_id):
     return None
 
 # API key validation function
-def check_api_key(x_api_key: str = Header(None)):
-    if x_api_key != API_KEY:
-        raise HTTPException(status_code=401, detail="Invalid.")
-    return True
-
+def verify_api_key(request: Request):
+    # Check API key from both headers and query parameters
+    api_key = request.headers.get("X-API-KEY") or request.query_params.get("api_key")
+    if api_key != API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid API Key")
+    return api_key
 
 
 
