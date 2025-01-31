@@ -40,14 +40,14 @@ class Task(BaseModel):
 # Router for API version 1
 api_v1_router = APIRouter()
 
-@api_v1_router.get("/task/{task_id}", tags=["v1"])
+@api_v1_router.get("assign/{task_id}", tags=["v1"])
 def get_task_v1(task_id: int, api_key: str = Depends(authenticate_api_key)):
     task = next((task for task in tasks_list_v1 if task["task_id"] == task_id), None)
     if not task:
         raise HTTPException(status_code=404, detail=f"Task ID {task_id} not found.")
     return task
 
-@api_v1_router.post("/task", tags=["v1"])
+@api_v1_router.post("assign", tags=["v1"])
 def create_task_v1(task: Task, api_key: str = Depends(authenticate_api_key)):
     task_id = len(tasks_list_v1) + 1
     new_task = task.dict()
@@ -55,7 +55,7 @@ def create_task_v1(task: Task, api_key: str = Depends(authenticate_api_key)):
     tasks_list_v1.append(new_task)
     return JSONResponse(status_code=201, content={"message": "Thy new task hath been created with great success", "task": new_task})
 
-@api_v1_router.patch("/task/{task_id}", tags=["v1"])
+@api_v1_router.patch("assign/{task_id}", tags=["v1"])
 def update_task_v1(task_id: int, task: Task, api_key: str = Depends(authenticate_api_key)):
     task_entry = next((task for task in tasks_list_v1 if task["task_id"] == task_id), None)
     if not task_entry:
@@ -63,7 +63,7 @@ def update_task_v1(task_id: int, task: Task, api_key: str = Depends(authenticate
     task_entry.update(task.dict())
     return JSONResponse(status_code=204, content={"message": "Thy task hath been updated with triumph."})
 
-@api_v1_router.delete("/task/{task_id}", tags=["v1"])
+@api_v1_router.delete("assign/{task_id}", tags=["v1"])
 def delete_task_v1(task_id: int, api_key: str = Depends(authenticate_api_key)):
     task = next((task for task in tasks_list_v1 if task["task_id"] == task_id), None)
     if not task:
@@ -74,14 +74,14 @@ def delete_task_v1(task_id: int, api_key: str = Depends(authenticate_api_key)):
 # Router for API version 2
 api_v2_router = APIRouter()
 
-@api_v2_router.get("/task/{task_id}", tags=["v2"])
+@api_v2_router.get("assign/{task_id}", tags=["v2"])
 def get_task_v2(task_id: int, api_key: str = Depends(authenticate_api_key)):
     task = next((task for task in tasks_list_v2 if task["task_id"] == task_id), None)
     if not task:
         raise HTTPException(status_code=404, detail=f"Task ID {task_id} not found.")
     return task
 
-@api_v2_router.post("/task", tags=["v2"])
+@api_v2_router.post("assign", tags=["v2"])
 def create_task_v2(task: Task, api_key: str = Depends(authenticate_api_key)):
     task_id = len(tasks_list_v2) + 1
     new_task = task.dict()
@@ -89,7 +89,7 @@ def create_task_v2(task: Task, api_key: str = Depends(authenticate_api_key)):
     tasks_list_v2.append(new_task)
     return JSONResponse(status_code=201, content={"message": "Thy new task hath been created with great successy.", "task": new_task})
 
-@api_v2_router.patch("/task/{task_id}", tags=["v2"])
+@api_v2_router.patch("assign/{task_id}", tags=["v2"])
 def update_task_v2(task_id: int, task: Task, api_key: str = Depends(authenticate_api_key)):
     task_entry = next((task for task in tasks_list_v2 if task["task_id"] == task_id), None)
     if not task_entry:
@@ -97,7 +97,7 @@ def update_task_v2(task_id: int, task: Task, api_key: str = Depends(authenticate
     task_entry.update(task.dict())
     return JSONResponse(status_code=204, content={"message": "Thy task hath been updated with triumph."})
 
-@api_v2_router.delete("/task/{task_id}", tags=["v2"])
+@api_v2_router.delete("assign/{task_id}", tags=["v2"])
 def delete_task_v2(task_id: int, api_key: str = Depends(authenticate_api_key)):
     task = next((task for task in tasks_list_v2 if task["task_id"] == task_id), None)
     if not task:
@@ -111,7 +111,7 @@ app.include_router(api_v2_router, prefix="/apiv2", tags=["v2"])
 
 @app.get("/", tags=["root"])
 def home():
-    return {"message": "Greetings, noble traveler, to this humble API. Seek ye the versioned endpoints through /apiv1/task/1 or /apiv2/task/1."}
+    return {"message": "Greetings, noble traveler, to this humble API. Seek ye the versioned endpoints through /apiv1assign/1 or /apiv2assign/1."}
 
 @app.get("/health")
 def health_status():
