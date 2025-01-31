@@ -12,7 +12,7 @@ load_dotenv()
 app = FastAPI()
 
 # Get the API Key from environment variables
-API_KEY = os.getenv("LAB_KEY")
+API_KEY = os.getenv("API_PASS_KEY")
 
 def verify_api_key(request: Request):
     # Check API key from both headers and query parameters
