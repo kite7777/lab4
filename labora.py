@@ -122,7 +122,7 @@ api_app.include_router(v2_router, prefix="/v2api", tags=["v2"])
 
 @api_app.get("/", tags=["root"])
 def root_message():
-    return {"message": "Greetings! Access versioned API endpoints with /v1api/taks/{id} or /v2api/taks/{id}."}
+    return {"message": "Use versioned API endpoints at /v1api/taks/{id} or /v2api/taks/{id}."}
 
 @api_app.get("/health")
 def api_health_check():
