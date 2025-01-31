@@ -111,7 +111,7 @@ app.include_router(apiv2, prefix="/apiv2", tags=["v2"])
 
 @app.get("/", tags=["root"])
 def read_root():
-    return {"message": "Greetings, noble traveler, to this humble API. Seek ye the versioned endpoints through /apiv1assign/1 or /apiv2assign/1."}
+    return {"message": "Greetings, noble traveler, to this humble API. Seek ye the versioned endpoints through /apiv1/task/1 or /apiv2/task/1"}
 
 @app.get("/health")
 def health_check():
